@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 current_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/utils.sh
 source "$current_dir/../lib/utils.sh"
 
 display_status=$(get_tmux_option '@tmux2k-git-display-status' 'false')
@@ -18,7 +19,7 @@ get_changes() {
     declare -i updated=0
     declare -i deleted=0
 
-    for i in $(git -C "$path" status -s); do
+    for i in $(git -C "$path" --no-optional-locks status -s 2>/dev/null); do
         case $i in
         'A') added+=1 ;;
         'M') modified+=1 ;;
@@ -47,7 +48,7 @@ check_empty_symbol() {
 
 check_for_changes() {
     if [ "$(check_for_git_dir)" == "true" ]; then
-        if [ "$(git -C "$path" status -s)" != "" ]; then
+        if [ "$(git -C "$path" --no-optional-locks status -s 2>/dev/null)" != "" ]; then
             echo "true"
         else
             echo "false"
@@ -58,7 +59,7 @@ check_for_changes() {
 }
 
 check_for_git_dir() {
-    if [ "$(git -C "$path" rev-parse --abbrev-ref HEAD)" != "" ]; then
+    if git -C "$path" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         echo "true"
     else
         echo "false"
@@ -66,29 +67,31 @@ check_for_git_dir() {
 }
 
 get_branch() {
-    if [ $(check_for_git_dir) == "true" ]; then
-        printf "%.20s " $(git -C "$path" rev-parse --abbrev-ref HEAD)
+    if [ "$(check_for_git_dir)" == "true" ]; then
+        local branch
+        branch=$(git -C "$path" --no-optional-locks rev-parse --abbrev-ref HEAD 2>/dev/null)
+        printf "%.20s " "${branch:-HEAD}"
     else
         echo "$no_repo_icon"
     fi
 }
 
 get_message() {
-    if [ $(check_for_git_dir) == "true" ]; then
+    if [ "$(check_for_git_dir)" == "true" ]; then
         branch="$(get_branch)"
 
-        if [ $(check_for_changes) == "true" ]; then
+        if [ "$(check_for_changes)" == "true" ]; then
 
             changes="$(get_changes)"
 
             if [ "${display_status}" == "false" ]; then
-                if [ $(check_empty_symbol "$diff_icon") == "true" ]; then
+                if [ "$(check_empty_symbol "$diff_icon")" == "true" ]; then
                     echo "${changes} $branch"
                 else
                     echo "$diff_icon ${changes} $branch"
                 fi
             else
-                if [ $(check_empty_symbol "$diff_icon") == "true" ]; then
+                if [ "$(check_empty_symbol "$diff_icon")" == "true" ]; then
                     echo "$branch"
                 else
                     echo "$diff_icon $branch"
@@ -96,7 +99,7 @@ get_message() {
             fi
 
         else
-            if [ $(check_empty_symbol "$repo_icon") == "true" ]; then
+            if [ "$(check_empty_symbol "$repo_icon")" == "true" ]; then
                 echo "$branch"
             else
                 echo "$repo_icon $branch"
