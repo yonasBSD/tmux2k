@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 current_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=../lib/utils.sh
 source "$current_dir/../lib/utils.sh"
 
 verify_mise_command() {
@@ -15,32 +16,32 @@ get_language_icon() {
     local tool="$1"
 
     case "$tool" in
-        node) echo "" ;;
-        python) echo "" ;;
-        ruby) echo "" ;;
-        go) echo "" ;;
-        rust) echo "" ;;
-        java) echo "" ;;
-        php) echo "" ;;
-        elixir) echo "" ;;
-        erlang) echo "" ;;
-        haskell) echo "" ;;
-        lua) echo "" ;;
-        perl) echo "" ;;
-        r) echo "" ;;
-        swift) echo "" ;;
-        kotlin) echo "" ;;
-        scala) echo "" ;;
-        clojure) echo "" ;;
-        dart) echo "" ;;
-        crystal) echo "" ;;
-        zig) echo "" ;;
-        nim) echo "" ;;
-        deno) echo "" ;;
-        bun) echo "" ;;
-        terraform) echo "󱁢" ;;
-        usage) echo "" ;;
-        *) echo "$tool" ;;
+    node) echo "" ;;
+    python) echo "" ;;
+    ruby) echo "" ;;
+    go) echo "" ;;
+    rust) echo "" ;;
+    java) echo "" ;;
+    php) echo "" ;;
+    elixir) echo "" ;;
+    erlang) echo "" ;;
+    haskell) echo "" ;;
+    lua) echo "" ;;
+    perl) echo "" ;;
+    r) echo "" ;;
+    swift) echo "" ;;
+    kotlin) echo "" ;;
+    scala) echo "" ;;
+    clojure) echo "" ;;
+    dart) echo "" ;;
+    crystal) echo "" ;;
+    zig) echo "" ;;
+    nim) echo "" ;;
+    deno) echo "" ;;
+    bun) echo "" ;;
+    terraform) echo "󱁢" ;;
+    usage) echo "" ;;
+    *) echo "$tool" ;;
     esac
 }
 
@@ -55,10 +56,10 @@ get_active_versions() {
     count=0
     while IFS= read -r line && [ "$count" -lt "$max_display" ]; do
         if [ -n "$line" ]; then
-            tool=$(echo "$line" | awk '{print $1}')
-            version=$(echo "$line" | awk '{print $2}')
+            tool="${line%% *}"
+            version="${line##* }"
 
-            if printf '%s\n' "$exclude_tools" | grep -qw -- "$tool"; then
+            if [[ " $exclude_tools " == *" $tool "* ]]; then
                 continue
             fi
 
