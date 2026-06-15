@@ -3,22 +3,23 @@
 get_tmux_option() {
     local option=$1
     local default_value=$2
-    local option_value=$(tmux show-option -gqv "$option")
+    local option_value
+    option_value=$(tmux show-option -gqv "$option")
     if [ -z "$option_value" ]; then
-        echo $default_value
+        echo "$default_value"
     else
-        echo $option_value
+        echo "$option_value"
     fi
 }
 
 normalize_padding() {
     percent_len=${#1}
     max_len=${2:-4}
-    let diff_len=$max_len-$percent_len
+    diff_len=$(( max_len - percent_len ))
     # if the diff_len is even, left will have 1 more space than right
-    let left_spaces=($diff_len + 1)/2
-    let right_spaces=($diff_len)/2
-    printf "%${left_spaces}s%s%${right_spaces}s\n" "" $1 ""
+    left_spaces=$(( (diff_len + 1) / 2 ))
+    right_spaces=$(( diff_len / 2 ))
+    printf "%${left_spaces}s%s%${right_spaces}s\n" "" "$1" ""
 }
 
 get_pane_dir() {
