@@ -2,7 +2,8 @@
 
 export LC_ALL=en_US.UTF-8
 
-readonly current_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+current_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly current_dir
 source "$current_dir/../lib/utils.sh"
 
 cpu_icon="$(get_tmux_option '@tmux2k-cpu-icon' '')"
@@ -27,7 +28,7 @@ get_cpu_usage() {
         ;;
 
     Darwin)
-        local cpuvalues cpucores cpuusage
+        local cpucores cpuusage cpuvalue
         cpuvalue="$(ps -A -o %cpu | awk -F. '{s+=$1} END {print s}')"
         cpucores="$(getconf _NPROCESSORS_ONLN)"
         cpuusage="$((cpuvalue / cpucores))"
@@ -42,18 +43,21 @@ get_cpu_usage() {
 
     if [ "$cpu_usage_average" -gt '1' ] ; then
         local -a cpu_usage_values=("$percent")
-        cpu_usage_values+=($(get_tmux_option '@tmux2k-cpu-usage-values'))
+        local -a saved_values
+        IFS=' ' read -r -a saved_values <<< "$(get_tmux_option '@tmux2k-cpu-usage-values')"
+        cpu_usage_values+=("${saved_values[@]}")
 
         # We want to get average of n=cpu_usage_average values
-        [ "${#cpu_usage_values[@]}" -gt "$cpu_usage_average" ] &&\
-            cpu_usage_values=(${cpu_usage_values[@]:0:$cpu_usage_average})
+        if [ "${#cpu_usage_values[@]}" -gt "$cpu_usage_average" ]; then
+            cpu_usage_values=("${cpu_usage_values[@]:0:$cpu_usage_average}")
+        fi
 
-        cpu_usage_values="${cpu_usage_values[*]}"
+        local cpu_usage_string="${cpu_usage_values[*]}"
         percent="$(awk "BEGIN {
-            printf \"%.3g\", (${cpu_usage_values// /+}) / $cpu_usage_average
+            printf \"%.3g\", (${cpu_usage_string// /+}) / $cpu_usage_average
         }")"
 
-        tmux set -g '@tmux2k-cpu-usage-values' "$cpu_usage_values"
+        tmux set -g '@tmux2k-cpu-usage-values' "$cpu_usage_string"
     fi
 
     local output=''
@@ -97,22 +101,26 @@ float_to_percent() {
 }
 
 get_cpu_load() {
-    local cpu_load_normalize cpu_load_percent cpu_load_averages
+    local cpu_load_normalize cpu_load_percent
     cpu_load_normalize="$(get_tmux_option '@tmux2k-cpu-load-normalize' 'true')"
     cpu_load_percent="$(get_tmux_option '@tmux2k-cpu-load-percent' 'true')"
-    cpu_load_averages=($(get_tmux_option '@tmux2k-cpu-load-averages' '1m 5m 15m'))
 
-    declare -a output=()
+    local -a cpu_load_averages
+    IFS=' ' read -r -a cpu_load_averages <<< "$(get_tmux_option '@tmux2k-cpu-load-averages' '1m 5m 15m')"
+
+    declare -a cpu_load_output=()
     case $(uname -s) in
     Linux | Darwin)
         declare -a loadavg=()
-        loadavg+=($(uptime | awk -F'[a-z]:' '{ print $2}' | sed 's/,//g'))
+        local raw_loadavg
+        raw_loadavg=$(uptime | awk -F'[a-z]:' '{ print $2}' | sed 's/,//g')
+        IFS=' ' read -r -a loadavg <<< "$raw_loadavg"
 
         local i avg interval color
         declare -a intervals=('1m' '5m' '15m')
         for ((i = 0; i < "${#intervals[@]}"; i++)); do
             interval="${intervals[$i]}"
-            ! [[ " ${cpu_load_averages[@]} " =~ " $interval " ]] &&\
+            ! [[ " ${cpu_load_averages[*]} " == *" $interval "* ]] &&\
                 continue
 
             avg="${loadavg[$i]}"
@@ -129,14 +137,14 @@ get_cpu_load() {
                 color="#[fg=${color:-default}]"
             fi
 
-            output+=("${color}$(normalize_padding "$avg" 4)")
+            cpu_load_output+=("${color}$(normalize_padding "$avg" 4)")
         done
         ;;
 
     CYGWIN* | MINGW32* | MSYS* | MINGW*) ;; # TODO - windows compatibility
     esac
 
-    printf '%s' "${output[*]}"
+    printf '%s' "${cpu_load_output[*]}"
 }
 
 main() {

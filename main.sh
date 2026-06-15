@@ -78,7 +78,8 @@ declare -A plugin_colors=(
 )
 
 reverse_colors() {
-    local colors=($1)
+    local colors=()
+    IFS=' ' read -r -a colors <<< "$1"
     echo "${colors[1]} ${colors[0]}"
 }
 
@@ -267,13 +268,16 @@ set_options() {
 }
 
 status_bar() {
-    side=$1
+    local side=$1
+    local plugins=()
     if [ "$side" == "left" ]; then
         plugins=("${lplugins[@]}")
     else
         plugins=("${rplugins[@]}")
     fi
 
+    local pl_bg="${bg_main}"
+    local plugin_index plugin colors script next_plugin next_colors pl_bg_name
     for plugin_index in "${!plugins[@]}"; do
         plugin="${plugins[$plugin_index]}"
         IFS=' ' read -r -a colors <<<"$(get_plugin_colors "$plugin")"
@@ -287,7 +291,12 @@ status_bar() {
             if $show_powerline; then
                 next_plugin=${plugins[$((plugin_index + 1))]}
                 IFS=' ' read -r -a next_colors <<<"$(get_plugin_colors "$next_plugin")"
-                pl_bg=${!next_colors[0]:-$bg_main}
+                pl_bg_name="${next_colors[0]}"
+                if [ -n "$pl_bg_name" ]; then
+                    pl_bg="${!pl_bg_name}"
+                else
+                    pl_bg="$bg_main"
+                fi
                 if [ "$plugin" == "session" ]; then
                     tmux set-option -ga status-left \
                         "#[fg=${!colors[1]},bg=${!colors[0]}]#{?client_prefix,#[bg=${prefix_highlight}],} $script #[fg=${!colors[0]},bg=${pl_bg}]#{?client_prefix,#[fg=${prefix_highlight}],}${l_sep}"

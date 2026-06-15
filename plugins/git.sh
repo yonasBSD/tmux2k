@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
 current_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=../lib/utils.sh
 source "$current_dir/../lib/utils.sh"
 
 display_status=$(get_tmux_option '@tmux2k-git-display-status' 'false')
