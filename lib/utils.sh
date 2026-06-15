@@ -23,12 +23,5 @@ normalize_padding() {
 }
 
 get_pane_dir() {
-    nextone="false"
-    ret=""
-    for i in $(tmux list-panes -F "#{pane_active} #{pane_current_path}"); do
-        [ "$i" == "1" ] && nextone="true" && continue
-        [ "$i" == "0" ] && nextone="false"
-        [ "$nextone" == "true" ] && ret+="$i "
-    done
-    echo "${ret%?}"
+    tmux display-message -p -F "#{pane_current_path}" 2>/dev/null
 }
