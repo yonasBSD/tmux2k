@@ -5,8 +5,8 @@ source "$current_dir/../lib/utils.sh"
 
 truncate_path() {
     local path="$1"
-    local max_length=$(get_tmux_option "@tmux2k-cwd-length" 40)
-    local min_depth=$(get_tmux_option "@tmux2k-cwd-min-depth" 4)
+    local max_length=$(get_tmux_option "@tmux2k-cwd-length" 30)
+    local min_depth=$(get_tmux_option "@tmux2k-cwd-min-depth" 3)
     local prefix_chars=$(get_tmux_option "@tmux2k-cwd-prefix-chars" 2)
 
     [[ ${#path} -le $max_length ]] && echo "$path" && return
